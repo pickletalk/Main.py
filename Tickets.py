@@ -34,30 +34,20 @@ intents.guilds = True
 bot = commands.Bot(command_prefix="/", intents=intents)
 
 # Configuration
-TOKEN = "MTM2MzI1MzM4MDk3MzMzMDUyMw.GOoaUj.gKxJzk-6WMM8y78o6eyGb46KfLDoGdC30FNte4"
-GUILD_ID = 1361968509621637243
-STAFF_ROLE_ID = 1362006485575532544
-SPECIAL_ROLE_ID = 1361969514170024006
-PARTNER_MANAGER_ROLE_ID = 1369415348377616424
-TRANSCRIPT_CHANNEL_ID = 1365301557650001980
-PANEL_CHANNEL_ID = 1361976454081941626
-GWS = 1364475838237769738
-QDS = 1364476242539319316
-INVITE = 1362110597298262228
-MODERATOR_ROLE_ID = 1372782448093560906
-LOG_CHANNEL_ID = 1363055877845680168
-WELCOME_CHANNEL_ID = 1361968510946771068
+TOKEN = "MTM5MDY5NTAxMjEyNzM0MjY3Mg.GGBQpW.HbCbzOk5fK5fDqdqvBdGOsRXmh8_jsHgHDae4M"
+GUILD_ID = 1375105480858533940
+STAFF_ROLE_ID = 1375106139632570379
+SPECIAL_ROLE_ID = 1375144480792907816
+TRANSCRIPT_CHANNEL_ID = 1375147458123927552
+PANEL_CHANNEL_ID = 1375143281255776309
 gmt8 = timezone(timedelta(hours=8))
 now = datetime.now(gmt8)
 timestamp = now.strftime("%B %d, %Y %H:%M GMT+8")
-NO_TEXT_CHANNEL_ID = 1378923709594861618
-ALLOWED_MESSAGE_ID = 1378924379156774932
 
 # Category limits (changeable)
 CATEGORY_LIMITS = {
     "Support": 1,
     "Giveaway": 7,
-    "Partnerships": 1,
     "Trusted Approval": 1
 }
 
@@ -84,22 +74,14 @@ category_data = {
             {"q": "Show proof on ticket", "ph": "No proof/ping = No payment"}
         ]
     },
-    "partnership": {
-        "id": 1364253525722533990,
-        "display_name": "Partnerships",
-        "questions": [
-            {"q": "How many members?", "ph": "ex. 100"},
-            {"q": "What ping you want?", "ph": "ex. both member"},
-            {"q": "Ad", "ph": "`Send your ad here`"}
-        ]
-    },
     "trusted": {
         "id": 1364253628642230425,
         "display_name": "Sell Skelly",
         "questions": [
             {"q": "What's your ign?", "ph": "ex. in PickleTalk"},
-            {"q": "How much skelly?", "ph": "ex. 20"},
-            {"q": "Do you agree were not going first?", "ph": "If nope we will not buy"}
+            {"q": "What is your order?", "ph": "ex. donutSMP Money"},
+            {"q": "How much order?", "ph": "ex. 5m"},
+            {"q": "How much you think it will cost?", "ph": "ex. 23$"}
         ]
     }
 }
@@ -154,51 +136,6 @@ def save_blacklist():
                 print(f"Saved {len(blacklisted_users)} blacklisted users to file")
             except Exception as e:
                 print(f"Error saving blacklist: {e}")
-
-@bot.event
-async def on_message(message):
-    # Ignore messages from the bot itself
-    if message.author == bot.user:
-        return
-    
-    # Check if message is in the monitored channel
-    if message.channel.id == NO_TEXT_CHANNEL_ID:
-        # Check if this is NOT the allowed message
-        if message.id != ALLOWED_MESSAGE_ID:
-            try:
-                await message.delete()
-                print(f"Deleted message from {message.author}: {message.content[:50]}...")
-            except discord.errors.NotFound:
-                print("Message was already deleted")
-            except discord.errors.Forbidden:
-                print("Bot doesn't have permission to delete messages")
-            except Exception as e:
-                print(f"Error deleting message: {e}")
-    
-    # Check if message is in a ticket channel and cancel auto-close timer
-    if message.channel.topic and "UserID:" in message.channel.topic:
-        channel_id = message.channel.id
-        if channel_id in ticket_timers:
-            ticket_timers[channel_id].cancel()
-            del ticket_timers[channel_id]
-            print(f"Auto-close timer cancelled for {message.channel.name}")
-    
-    # Process other commands
-    await bot.process_commands(message)
-
-@bot.event
-async def on_member_remove(member):
-    """Handle when a member leaves the server"""
-    guild = member.guild
-    
-    # Find all tickets created by this user
-    for category_key, category_info in category_data.items():
-        category = guild.get_channel(category_info["id"])
-        if category:
-            for channel in category.channels:
-                if channel.topic and f"UserID: {member.id}" in channel.topic:
-                    # Close ticket with auto-close message
-                    await auto_close_ticket(channel, "User Left Server", "AutoClose System")
 
 async def auto_close_ticket(channel, reason, closed_by):
     """Auto close ticket function"""
@@ -287,17 +224,6 @@ async def start_auto_close_timer(channel):
     ticket_timers[channel.id] = timer
     print(f"Auto-close timer started for {channel.name}")
 
-# Optional: Command to check bot status
-@bot.command(name='status')
-async def status(ctx):
-    """Check if the bot is working and show configuration"""
-    if ctx.author.guild_permissions.manage_messages:  # Only for users with manage messages permission
-        embed = discord.Embed(title="Auto-Delete Bot Status", color=0x00ff00)
-        embed.add_field(name="Status", value="✅ Active", inline=False)
-        embed.add_field(name="Monitored Channel", value=f"<#{NO_TEXT_CHANNEL_ID}>", inline=False)
-        embed.add_field(name="Allowed Message ID", value=str(ALLOWED_MESSAGE_ID), inline=False)
-        await ctx.send(embed=embed)
-
 @bot.event
 async def on_ready():
     print('bot has logged in!')
@@ -365,20 +291,15 @@ async def setup_ticket(interaction: discord.Interaction):
 📨 **Support**
 Open a ticket only if you need assistance with one of the following:
 - General Support
-- Claiming the OG Role
-- Interested in Joining the Team
+- Payment support
 
 🎉 **Giveaway Claim**
 Won a giveaway? Congrats!
 Create a ticket only if you're claiming a prize.
 
-🤝 **Partnerships**
-Want to partner with us?
-Open a ticket to discuss the details.
-
-🦴 **Sell Skelly**
-Looking for expensive skelly buyer?
-Open a ticket here to get started.
+💳 **Order**
+Tired grinding and want to pay to win?
+Open a ticket to order!
 
 **Note:** Misusing tickets may lead to a blacklist.""",
         color=discord.Color.green()
@@ -409,85 +330,6 @@ async def ticket_close(interaction: discord.Interaction, reason: str = None):
     control_view = TicketControlView()
     await control_view.close_ticket(interaction, close_reason)
 
-@bot.tree.command(name="set-limit", description="Set ticket limit for a category")
-@app_commands.describe(category="Category name", limit="New limit")
-@app_commands.choices(category=[
-    app_commands.Choice(name="Support", value="Support"),
-    app_commands.Choice(name="Giveaway", value="Giveaway"),
-    app_commands.Choice(name="Partnerships", value="Partnerships"),
-    app_commands.Choice(name="Trusted Approval", value="Trusted Approval")
-])
-async def set_limit(interaction: discord.Interaction, category: str, limit: int):
-    # Check permissions
-    if not any(role.id == STAFF_ROLE_ID for role in interaction.user.roles):
-        await interaction.response.send_message("You don't have permission to use this command.", ephemeral=True)
-        return
-    
-    if limit < 1:
-        await interaction.response.send_message("Limit must be at least 1.", ephemeral=True)
-        return
-    
-    CATEGORY_LIMITS[category] = limit
-    
-    embed = discord.Embed(
-        title="Category Limit Updated",
-        description=f"**{category}** ticket limit has been set to **{limit}**",
-        color=discord.Color.green()
-    )
-    await interaction.response.send_message(embed=embed)
-
-@bot.tree.command(name="blacklist", description="Blacklist a user from creating tickets")
-@app_commands.describe(user="User to blacklist")
-async def blacklist_user(interaction: discord.Interaction, user: discord.Member):
-    # Check permissions
-    if not any(role.id == STAFF_ROLE_ID for role in interaction.user.roles):
-        await interaction.response.send_message("You don't have permission to use this command.", ephemeral=True)
-        return
-    
-    if user.id in blacklisted_users:
-        await interaction.response.send_message(f"{user.mention} is already blacklisted.", ephemeral=True)
-        return
-    
-    blacklisted_users.add(user.id)
-    save_blacklist()
-    
-    embed = discord.Embed(
-        title="User Blacklisted",
-        description=f"**{user.display_name}** has been successfully blacklisted from creating tickets.",
-        color=discord.Color.red()
-    )
-    embed.add_field(name="User", value=user.mention, inline=True)
-    embed.add_field(name="Blacklisted by", value=interaction.user.mention, inline=True)
-    embed.set_thumbnail(url=user.display_avatar.url)
-    
-    await interaction.response.send_message(embed=embed)
-
-@bot.tree.command(name="unblacklist", description="Remove a user from the blacklist")
-@app_commands.describe(user="User to unblacklist")
-async def unblacklist_user(interaction: discord.Interaction, user: discord.Member):
-    # Check permissions
-    if not any(role.id == STAFF_ROLE_ID for role in interaction.user.roles):
-        await interaction.response.send_message("You don't have permission to use this command.", ephemeral=True)
-        return
-    
-    if user.id not in blacklisted_users:
-        await interaction.response.send_message(f"{user.mention} is not blacklisted.", ephemeral=True)
-        return
-    
-    blacklisted_users.remove(user.id)
-    save_blacklist()
-    
-    embed = discord.Embed(
-        title="User Unblacklisted",
-        description=f"**{user.display_name}** has been successfully removed from the blacklist.",
-        color=discord.Color.green()
-    )
-    embed.add_field(name="User", value=user.mention, inline=True)
-    embed.add_field(name="Unblacklisted by", value=interaction.user.mention, inline=True)
-    embed.set_thumbnail(url=user.display_avatar.url)
-    
-    await interaction.response.send_message(embed=embed)
-
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -500,11 +342,7 @@ class TicketView(discord.ui.View):
     async def giveaway_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.open_ticket_modal(interaction, "giveaway")
 
-    @discord.ui.button(label="🤝 Partnerships", style=discord.ButtonStyle.primary, custom_id="partnership_btn")
-    async def partnership_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.open_ticket_modal(interaction, "partnership")
-
-    @discord.ui.button(label="🦴 Sell Skelly", style=discord.ButtonStyle.success, custom_id="trusted_btn")
+    @discord.ui.button(label="💳 Order", style=discord.ButtonStyle.success, custom_id="trusted_btn")
     async def trusted_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.open_ticket_modal(interaction, "trusted")
 
@@ -573,13 +411,6 @@ class TicketModal(discord.ui.Modal):
                     view_channel=True, send_messages=True)
             }
 
-            # Add Partner Manager role if partnership ticket
-            if self.ticket_type == "partnership":
-                partner_role = interaction.guild.get_role(PARTNER_MANAGER_ROLE_ID)
-                if partner_role:
-                    overwrites[partner_role] = discord.PermissionOverwrite(
-                        view_channel=True, send_messages=True)
-
             # Send the initial response first
             await interaction.response.send_message("Creating ticket...", ephemeral=True)
 
@@ -614,11 +445,7 @@ Thank you for your patience!""",
                 qa_embed.add_field(name=q["q"], value=f"{self.children[i].value}", inline=False)
 
             view = TicketControlView()
-                 
-            # Ping appropriate roles
-            if self.ticket_type == "partnership":
-                ping_msg = f"{interaction.user.mention}, {interaction.guild.get_role(PARTNER_MANAGER_ROLE_ID).mention}, {interaction.guild.get_role(SPECIAL_ROLE_ID).mention}"
-            else:
+
                 ping_msg = f"{interaction.user.mention}, {interaction.guild.get_role(STAFF_ROLE_ID).mention}, {interaction.guild.get_role(SPECIAL_ROLE_ID).mention}"
                 
             await channel.send(ping_msg)
@@ -822,6 +649,83 @@ class TicketControlView(discord.ui.View):
         except Exception as e:
             print(f"Error claiming ticket: {e}")
             await interaction.response.send_message("Failed to claim ticket.", ephemeral=True)
+
+# Start the bot
+if __name__ == "__main__":
+    keep_alive()
+    bot.run(TOKEN)
+nnel=True, send_messages=True)
+                except:
+                    pass
+
+            new_topic = f"Claimed by {interaction.user.name}" + (f" | UserID: {user_id}" if user_id else "")
+            await channel.edit(topic=new_topic, overwrites=overwrites)
+            await interaction.response.send_message(f"{interaction.user.mention} has claimed this ticket.")
+            
+        except Exception as e:
+            print(f"Error claiming ticket: {e}")
+            await interaction.response.send_message("Failed to claim ticket.", ephemeral=True)
+
+# Start the bot
+if __name__ == "__main__":
+    keep_alive()
+    bot.run(TOKEN)
+)
+
+# Start the bot
+if __name__ == "__main__":
+    keep_alive()
+    bot.run(TOKEN)
+
+    keep_alive()
+    bot.run(TOKEN)
+()
+    bot.run(TOKEN)
+ep_alive()
+    bot.run(TOKEN)
+OKEN)
+    channel = interaction.channel
+            current_topic = channel.topic or ""
+            user_id = None
+            
+            # Cancel auto-close timer when ticket is claimed
+            if channel.id in ticket_timers:
+                ticket_timers[channel.id].cancel()
+                del ticket_timers[channel.id]
+                print(f"Auto-close timer cancelled for claimed ticket: {channel.name}")
+            
+            if "UserID:" in current_topic:
+                try:
+                    user_id = int(current_topic.split("UserID:")[1].strip())
+                except:
+                    pass
+
+            overwrites = {
+                interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
+                interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True, manage_messages=True),
+                interaction.guild.get_role(SPECIAL_ROLE_ID): discord.PermissionOverwrite(view_channel=True, send_messages=True)
+            }
+
+            if user_id:
+                try:
+                    member = await interaction.guild.fetch_member(user_id)
+                    overwrites[member] = discord.PermissionOverwrite(view_channel=True, send_messages=True)
+                except:
+                    pass
+
+            new_topic = f"Claimed by {interaction.user.name}" + (f" | UserID: {user_id}" if user_id else "")
+            await channel.edit(topic=new_topic, overwrites=overwrites)
+            await interaction.response.send_message(f"{interaction.user.mention} has claimed this ticket.")
+            
+        except Exception as e:
+            print(f"Error claiming ticket: {e}")
+            await interaction.response.send_message("Failed to claim ticket.", ephemeral=True)
+
+# Start the bot
+if __name__ == "__main__":
+    keep_alive()
+    bot.run(TOKEN)
+wait interaction.response.send_message("Failed to claim ticket.", ephemeral=True)
 
 # Start the bot
 if __name__ == "__main__":
